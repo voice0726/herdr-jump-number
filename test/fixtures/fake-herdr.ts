@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 // テスト用の偽 herdr。argv を FAKE_HERDR_LOG に追記し、
-// FAKE_HERDR_WORKSPACES / FAKE_HERDR_TABS の内容を応答として返す。
+// FAKE_HERDR_WORKSPACES / FAKE_HERDR_PANES / FAKE_HERDR_TABS の内容を応答として返す。
 // FAKE_HERDR_FAIL に "workspace list" などを入れると、その呼び出しだけ失敗させられる。
 import { appendFileSync } from "node:fs";
 
@@ -27,6 +27,13 @@ if (key === "workspace list") {
     JSON.stringify({
       id: "fake",
       result: { tabs: JSON.parse(process.env.FAKE_HERDR_TABS ?? "[]") },
+    }),
+  );
+} else if (key === "pane list") {
+  process.stdout.write(
+    JSON.stringify({
+      id: "fake",
+      result: { panes: JSON.parse(process.env.FAKE_HERDR_PANES ?? "[]") },
     }),
   );
 } else if (key === "workspace report-metadata") {

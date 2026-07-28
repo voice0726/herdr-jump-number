@@ -13,6 +13,11 @@ export type TabInfo = {
   label: string;
 };
 
+export type PaneInfo = {
+  pane_id: string;
+  workspace_id: string;
+};
+
 export class HerdrError extends Error {
   constructor(message: string) {
     super(message);
@@ -67,6 +72,12 @@ export function listTabs(): TabInfo[] {
   return (result.tabs ?? []) as TabInfo[];
 }
 
+/** pane list は全 workspace の pane を返す。 */
+export function listPanes(): PaneInfo[] {
+  const result = run(["pane", "list"]);
+  return (result.panes ?? []) as PaneInfo[];
+}
+
 export function setWorkspaceToken(id: string, name: string, value: string): void {
   run([
     "workspace",
@@ -81,6 +92,14 @@ export function setWorkspaceToken(id: string, name: string, value: string): void
 
 export function clearWorkspaceToken(id: string, name: string): void {
   run(["workspace", "report-metadata", id, "--source", SOURCE, "--clear-token", name]);
+}
+
+export function setPaneToken(id: string, name: string, value: string): void {
+  run(["pane", "report-metadata", id, "--source", SOURCE, "--token", `${name}=${value}`]);
+}
+
+export function clearPaneToken(id: string, name: string): void {
+  run(["pane", "report-metadata", id, "--source", SOURCE, "--clear-token", name]);
 }
 
 export function renameTab(tabId: string, label: string): void {

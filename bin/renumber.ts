@@ -1,11 +1,15 @@
 #!/usr/bin/env bun
 import { ConfigError, loadConfig, validateConfig, type Config } from "../lib/config";
 import {
+  clearPaneToken,
   clearWorkspaceToken,
+  listPanes,
   listTabs,
   listWorkspaces,
   renameTab,
+  setPaneToken,
   setWorkspaceToken,
+  type PaneInfo,
   type TabInfo,
   type WorkspaceInfo,
 } from "../lib/herdr";
@@ -50,9 +54,30 @@ function syncTabs(cfg: Config, tabs: TabInfo[], failures: string[]): void {
   );
 }
 
+function syncPanes(
+  cfg: Config,
+  workspaces: WorkspaceInfo[],
+  panes: PaneInfo[],
+  failures: string[],
+): void {
+  const workspaceNumbers = new Map(
+    workspaces.map((workspace) => [workspace.workspace_id, workspace.number]),
+  );
+  applyAll(
+    failures,
+    panes.map((pane) => () => {
+      const number = workspaceNumbers.get(pane.workspace_id);
+      const value = number === undefined ? null : desiredWorkspaceToken(cfg, number);
+      if (value === null) clearPaneToken(pane.pane_id, TOKEN_NAME);
+      else setPaneToken(pane.pane_id, TOKEN_NAME, value);
+    }),
+  );
+}
+
 function resetAll(
   cfg: Config,
   workspaces: WorkspaceInfo[],
+  panes: PaneInfo[],
   tabs: TabInfo[],
   failures: string[],
 ): void {
@@ -61,6 +86,10 @@ function resetAll(
   applyAll(
     failures,
     workspaces.map((workspace) => () => clearWorkspaceToken(workspace.workspace_id, TOKEN_NAME)),
+  );
+  applyAll(
+    failures,
+    panes.map((pane) => () => clearPaneToken(pane.pane_id, TOKEN_NAME)),
   );
   applyAll(
     failures,
@@ -94,13 +123,17 @@ function main(): number {
     // ここで失敗したら変更を一切適用せずに抜ける(fail-closed)。
     // 不完全な一覧で番号を振り直すと、実在する tab の prefix を誤って剥がしうる。
     const workspaces = reset || cfg.workspaces ? listWorkspaces() : [];
+    const panes = reset || cfg.workspaces ? listPanes() : [];
     const tabs = reset || cfg.tabs ? listTabs() : [];
 
     if (reset) {
-      resetAll(cfg, workspaces, tabs, failures);
+      resetAll(cfg, workspaces, panes, tabs, failures);
       return;
     }
-    if (cfg.workspaces) syncWorkspaces(cfg, workspaces, failures);
+    if (cfg.workspaces) {
+      syncWorkspaces(cfg, workspaces, failures);
+      syncPanes(cfg, workspaces, panes, failures);
+    }
     if (cfg.tabs) syncTabs(cfg, tabs, failures);
   });
 

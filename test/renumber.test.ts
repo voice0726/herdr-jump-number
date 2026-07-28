@@ -10,6 +10,7 @@ type RunResult = { exitCode: number; calls: string[][]; stderr: string };
 
 function runPlugin(options: {
   workspaces?: unknown[];
+  panes?: unknown[];
   tabs?: unknown[];
   configToml?: string;
   fail?: string;
@@ -30,6 +31,7 @@ function runPlugin(options: {
       FAKE_HERDR_BIN: FAKE,
       FAKE_HERDR_LOG: logPath,
       FAKE_HERDR_WORKSPACES: JSON.stringify(options.workspaces ?? []),
+      FAKE_HERDR_PANES: JSON.stringify(options.panes ?? []),
       FAKE_HERDR_TABS: JSON.stringify(options.tabs ?? []),
       FAKE_HERDR_FAIL: options.fail ?? "",
       HERDR_PLUGIN_CONFIG_DIR: dir,
@@ -56,6 +58,10 @@ const TABS = [
   { tab_id: "w1:t2", workspace_id: "w1", number: 2, label: "review" },
   { tab_id: "w2:t1", workspace_id: "w2", number: 1, label: "notes" },
 ];
+const PANES = [
+  { pane_id: "w1:p1", workspace_id: "w1" },
+  { pane_id: "w2:p1", workspace_id: "w2" },
+];
 
 describe("bin/renumber.ts", () => {
   test("workspace rename を一度も発行しない", () => {
@@ -70,6 +76,32 @@ describe("bin/renumber.ts", () => {
     const { calls } = runPlugin({ workspaces: WS, tabs: TABS });
     const tokenCall = calls.find((call) => call.includes("--token"));
     expect(tokenCall?.[tokenCall.indexOf("--token") + 1]).toBe("jumpnum=[1]");
+  });
+
+  test("pane に対応する workspace の jump number を報告する", () => {
+    const { calls } = runPlugin({ workspaces: WS, panes: PANES, tabs: TABS });
+    expect(calls).toContainEqual([
+      "pane",
+      "report-metadata",
+      "w1:p1",
+      "--source",
+      "voice0726.jump-number",
+      "--token",
+      "jumpnum=[1]",
+    ]);
+  });
+
+  test("max_number 超過の pane には jump number を残さない", () => {
+    const { calls } = runPlugin({ workspaces: WS, panes: PANES, tabs: TABS });
+    expect(calls).toContainEqual([
+      "pane",
+      "report-metadata",
+      "w2:p1",
+      "--source",
+      "voice0726.jump-number",
+      "--clear-token",
+      "jumpnum",
+    ]);
   });
 
   test("max_number 超過の workspace には --clear-token を発行する", () => {
@@ -121,11 +153,12 @@ describe("bin/renumber.ts", () => {
     ];
     const { calls } = runPlugin({
       workspaces: WS,
+      panes: PANES,
       tabs: resetTabs,
       configToml: "workspaces = false\ntabs = false\n",
       args: ["--reset"],
     });
-    expect(calls.filter((call) => call.includes("--clear-token")).length).toBe(2);
+    expect(calls.filter((call) => call.includes("--clear-token")).length).toBe(4);
     // "1" は既定ラベルなので触らない。prefix を持つ tab だけ剥がす。
     expect(calls).toContainEqual(["tab", "rename", "w1:t2", "review"]);
   });
@@ -158,6 +191,19 @@ describe("bin/renumber.ts", () => {
       workspaces: WS,
       tabs: TABS,
       fail: "tab list",
+    });
+    expect(exitCode).not.toBe(0);
+    expect(calls.filter((call) => call[1] === "rename" || call[1] === "report-metadata")).toEqual(
+      [],
+    );
+  });
+
+  test("pane list 失敗時も変更系を発行せず非 0 終了する", () => {
+    const { exitCode, calls } = runPlugin({
+      workspaces: WS,
+      panes: PANES,
+      tabs: TABS,
+      fail: "pane list",
     });
     expect(exitCode).not.toBe(0);
     expect(calls.filter((call) => call[1] === "rename" || call[1] === "report-metadata")).toEqual(
