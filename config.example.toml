@@ -1,0 +1,15 @@
+# ~/.config/herdr/plugins/config/voice0726.jump-number/config.toml に置く。
+# プラグインはイベントごとに読み直すので、編集しても herdr の再起動は不要。
+
+# workspace 側 / tab 側の有効・無効。
+# false にしても既に付いている表示は消えない(更新が止まるだけ)。
+# 消したい場合は先に reset を実行する。README の手順を参照。
+workspaces = true
+tabs = true
+
+# {n} が番号に置換される。どちらも {n} をちょうど 1 個含む必要がある。
+workspace_token = "[{n}]"
+tab_prefix = "{n}:"
+
+# 番号を出す上限。herdr の jump key が 1..9 なので 1〜9 のみ。
+max_number = 9
