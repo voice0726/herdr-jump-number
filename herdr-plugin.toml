@@ -22,6 +22,11 @@ command = ["bun", "bin/renumber.ts"]
 on = "workspace.closed"
 command = ["bun", "bin/renumber.ts"]
 [[events]]
+# Herdr 0.7.5 の対話 UI で Space を閉じる経路は workspace.closed を発火しない。
+# close 後は後続の Space が必ず focus されるため、ここで番号表示を再同期する。
+on = "workspace.focused"
+command = ["bun", "bin/renumber.ts"]
+[[events]]
 on = "tab.created"
 command = ["bun", "bin/renumber.ts"]
 [[events]]

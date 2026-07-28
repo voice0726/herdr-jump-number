@@ -24,6 +24,9 @@ describe("herdr-plugin.toml", () => {
     expect(subscribed.has("workspace.created")).toBe(true);
     expect(subscribed.has("workspace.moved")).toBe(true);
     expect(subscribed.has("workspace.closed")).toBe(true);
+    // Herdr 0.7.5 の対話 UI 経由の close では workspace.closed が届かないため、
+    // 後続 Space への focus を同期のフォールバックに使う。
+    expect(subscribed.has("workspace.focused")).toBe(true);
   });
 
   test("tab のライフサイクルイベントを購読する", () => {
