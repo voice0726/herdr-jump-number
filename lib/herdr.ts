@@ -61,7 +61,7 @@ export function listWorkspaces(): WorkspaceInfo[] {
   return (result.workspaces ?? []) as WorkspaceInfo[];
 }
 
-/** herdr tab list は全 workspace の tab を返す(design.md 3 節で検証済み)。 */
+/** herdr tab list は全 workspace の tab を返す。 */
 export function listTabs(): TabInfo[] {
   const result = run(["tab", "list"]);
   return (result.tabs ?? []) as TabInfo[];
