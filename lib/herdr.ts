@@ -34,6 +34,8 @@ export function run(args: string[]): Record<string, unknown> {
     );
   }
 
+  if (stdout.trim() === "") return {};
+
   let parsed: { result?: Record<string, unknown>; error?: { message?: string } };
   try {
     parsed = JSON.parse(stdout);

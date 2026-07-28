@@ -29,6 +29,11 @@ if (key === "workspace list") {
       result: { tabs: JSON.parse(process.env.FAKE_HERDR_TABS ?? "[]") },
     }),
   );
+} else if (key === "workspace report-metadata") {
+  // 実測値（herdr workspace report-metadata w2J --source diag --token diag=x）:
+  // exit=0、stdout の長さ=0。clear-token も同じ成功応答になる。
+  // 比較として herdr tab rename w2J:t2 "2:review" は stdout の長さ=185 の JSON。
+  process.stdout.write("");
 } else {
   process.stdout.write(JSON.stringify({ id: "fake", result: { type: "ok" } }));
 }

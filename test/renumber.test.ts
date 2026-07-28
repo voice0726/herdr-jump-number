@@ -175,6 +175,15 @@ describe("bin/renumber.ts", () => {
     expect(calls).toContainEqual(["tab", "rename", "w2:t1", "1:notes"]);
   });
 
+  test("report-metadata が空 stdout でも正常系は 0 終了する", () => {
+    const { exitCode, calls, stderr } = runPlugin({ workspaces: WS, tabs: TABS });
+    expect(calls.some((call) => call[0] === "workspace" && call[1] === "report-metadata")).toBe(
+      true,
+    );
+    expect(stderr).toBe("");
+    expect(exitCode).toBe(0);
+  });
+
   test("すべて成功したら 0 終了する", () => {
     const { exitCode } = runPlugin({ workspaces: WS, tabs: TABS });
     expect(exitCode).toBe(0);
