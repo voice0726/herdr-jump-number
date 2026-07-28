@@ -1,0 +1,47 @@
+id = "voice0726.jump-number"
+name = "Jump Number"
+version = "0.1.0"
+description = "Show jump-key numbers on workspaces and tabs without breaking herdr's automatic labels."
+min_herdr_version = "0.7.5"
+platforms = ["linux", "macos"]
+
+# ビルド工程は持たない([[build]] を書かない)。bun がソースを直接実行する。
+
+[[startup]]
+command = ["bun", "bin/renumber.ts"]
+
+# workspace.metadata_updated は意図的に購読しない。
+# 自分の report-metadata がこのイベントを発火するため、購読すると無限ループになる。
+[[events]]
+on = "workspace.created"
+command = ["bun", "bin/renumber.ts"]
+[[events]]
+on = "workspace.moved"
+command = ["bun", "bin/renumber.ts"]
+[[events]]
+on = "workspace.closed"
+command = ["bun", "bin/renumber.ts"]
+[[events]]
+on = "tab.created"
+command = ["bun", "bin/renumber.ts"]
+[[events]]
+on = "tab.moved"
+command = ["bun", "bin/renumber.ts"]
+[[events]]
+on = "tab.closed"
+command = ["bun", "bin/renumber.ts"]
+[[events]]
+on = "tab.renamed"
+command = ["bun", "bin/renumber.ts"]
+
+[[actions]]
+id = "sync"
+title = "Sync jump numbers"
+contexts = ["global"]
+command = ["bun", "bin/renumber.ts"]
+
+[[actions]]
+id = "reset"
+title = "Remove jump numbers"
+contexts = ["global"]
+command = ["bun", "bin/renumber.ts", "--reset"]
