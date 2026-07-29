@@ -169,7 +169,8 @@ user-named tabs. Numeric default labels are not changed.
 
 ## Reset, uninstall, or change the format
 
-Always disable the plugin before resetting its existing numbers. Otherwise,
+Resolve the plugin config directory before disabling it, then always disable
+the plugin before resetting its existing numbers. Otherwise,
 the tab rename performed by reset can trigger a synchronization event that
 adds the prefix again.
 
@@ -178,9 +179,14 @@ run it from the `plugin_root` shown by `herdr plugin list --json` while the
 plugin is still installed.
 
 ```sh
+JUMP_NUMBER_CONFIG_DIR="$(herdr plugin config-dir voice0726.jump-number)"
 herdr plugin disable voice0726.jump-number
-bun bin/renumber.ts --reset
+bun bin/renumber.ts --reset --config-dir "$JUMP_NUMBER_CONFIG_DIR"
 ```
+
+Passing `--config-dir` is required when running outside the Herdr plugin
+process. It ensures reset removes the prefix configured in the plugin's
+`config.toml`, rather than assuming the default prefix.
 
 ### Change the format
 
@@ -403,7 +409,8 @@ tab には同じ metadata 表示機構がないため、ユーザーが名前を
 
 ### reset・アンインストール・書式変更
 
-既存の番号を reset するときは、必ず先に plugin を disable してください。そうしないと、
+既存の番号を reset するときは、disable 前に plugin の config directory を取得し、その後で
+必ず plugin を disable してください。そうしないと、
 reset が行う tab rename から同期イベントが発生し、prefix が再び付くことがあります。
 
 以下の reset 手順は local checkout を前提にしています。GitHub 管理インストールの場合は、
@@ -411,9 +418,13 @@ plugin がまだインストールされている間に `herdr plugin list --jso
 そのディレクトリから同じ reset を実行してください。
 
 ```sh
+JUMP_NUMBER_CONFIG_DIR="$(herdr plugin config-dir voice0726.jump-number)"
 herdr plugin disable voice0726.jump-number
-bun bin/renumber.ts --reset
+bun bin/renumber.ts --reset --config-dir "$JUMP_NUMBER_CONFIG_DIR"
 ```
+
+Herdr の plugin process 外から実行するときは `--config-dir` が必要です。これにより、既定の
+prefix ではなく plugin の `config.toml` に設定した prefix を確実に削除します。
 
 #### 書式変更
 

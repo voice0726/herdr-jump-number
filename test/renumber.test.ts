@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -12,6 +18,7 @@ function runPlugin(options: {
   workspaces?: unknown[];
   tabs?: unknown[];
   configToml?: string;
+  explicitConfigToml?: string;
   fail?: string;
   args?: string[];
 }): RunResult {
@@ -21,8 +28,15 @@ function runPlugin(options: {
     // Bun.write は Promise を返すので使わない。子プロセス起動前に確実に書き込む必要がある。
     writeFileSync(join(dir, "config.toml"), options.configToml);
   }
+  let args = options.args ?? [];
+  if (options.explicitConfigToml !== undefined) {
+    const explicitDir = join(dir, "explicit-config");
+    mkdirSync(explicitDir);
+    writeFileSync(join(explicitDir, "config.toml"), options.explicitConfigToml);
+    args = [...args, "--config-dir", explicitDir];
+  }
 
-  const proc = Bun.spawnSync(["bun", ENTRY, ...(options.args ?? [])], {
+  const proc = Bun.spawnSync(["bun", ENTRY, ...args], {
     env: {
       ...process.env,
       // 偽 herdr を bun 経由で起動する。shebang と実行権に依存しない。
@@ -127,6 +141,19 @@ describe("bin/renumber.ts", () => {
     });
     expect(calls.filter((call) => call.includes("--clear-token")).length).toBe(2);
     // "1" は既定ラベルなので触らない。prefix を持つ tab だけ剥がす。
+    expect(calls).toContainEqual(["tab", "rename", "w1:t2", "review"]);
+  });
+
+  test("--reset --config-dir は plugin process 外でも custom prefix を剥がす", () => {
+    const customTabs = [
+      { tab_id: "w1:t2", workspace_id: "w1", number: 2, label: "[2] review" },
+    ];
+    const { calls } = runPlugin({
+      workspaces: [],
+      tabs: customTabs,
+      explicitConfigToml: 'tab_prefix = "[{n}] "\n',
+      args: ["--reset"],
+    });
     expect(calls).toContainEqual(["tab", "rename", "w1:t2", "review"]);
   });
 

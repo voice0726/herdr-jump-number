@@ -38,9 +38,9 @@ describe("herdr-plugin.toml", () => {
     expect(subscribed.has("workspace.metadata_updated")).toBe(false);
   });
 
-  test("reset action は --reset を渡す", () => {
+  test("有効中に再同期で打ち消される reset action を公開しない", () => {
     const reset = manifest.actions.find((action) => action.id === "reset");
-    expect(reset?.command).toEqual(["bun", "bin/renumber.ts", "--reset"]);
+    expect(reset).toBeUndefined();
   });
 
   test("platforms と min_herdr_version が固定されている", () => {

@@ -14,6 +14,31 @@ import { desiredTabLabel, desiredWorkspaceToken, tabBase } from "../lib/naming";
 
 const TOKEN_NAME = "jumpnum";
 
+type CliOptions = {
+  reset: boolean;
+  configDir?: string;
+};
+
+function parseArgs(args: string[]): CliOptions {
+  const options: CliOptions = { reset: false };
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (arg === "--reset") {
+      options.reset = true;
+    } else if (arg === "--config-dir") {
+      const value = args[i + 1];
+      if (!value || value.startsWith("--")) {
+        throw new Error("--config-dir にはディレクトリを指定する必要がある");
+      }
+      options.configDir = value;
+      i += 1;
+    } else {
+      throw new Error(`不明な引数: ${arg}`);
+    }
+  }
+  return options;
+}
+
 /** 個別の変更失敗を集める。1 件の失敗で全体を止めない。 */
 function applyAll(failures: string[], actions: (() => void)[]): void {
   for (const action of actions) {
@@ -73,11 +98,11 @@ function resetAll(
 }
 
 function main(): number {
-  const reset = process.argv.includes("--reset");
+  const options = parseArgs(process.argv.slice(2));
 
   let cfg: Config;
   try {
-    cfg = loadConfig();
+    cfg = loadConfig(options.configDir);
     validateConfig(cfg);
   } catch (error) {
     if (error instanceof ConfigError) {
@@ -93,10 +118,10 @@ function main(): number {
     // 一覧の取得はロック取得「後」。待たされた実行が最新を読むことを保証する。
     // ここで失敗したら変更を一切適用せずに抜ける(fail-closed)。
     // 不完全な一覧で番号を振り直すと、実在する tab の prefix を誤って剥がしうる。
-    const workspaces = reset || cfg.workspaces ? listWorkspaces() : [];
-    const tabs = reset || cfg.tabs ? listTabs() : [];
+    const workspaces = options.reset || cfg.workspaces ? listWorkspaces() : [];
+    const tabs = options.reset || cfg.tabs ? listTabs() : [];
 
-    if (reset) {
+    if (options.reset) {
       resetAll(cfg, workspaces, tabs, failures);
       return;
     }
@@ -104,10 +129,8 @@ function main(): number {
     if (cfg.tabs) syncTabs(cfg, tabs, failures);
   });
 
-  if (outcome === null) {
-    // 先行する実行が最新状態で処理する。取りこぼしではないので成功扱い。
-    return 0;
-  }
+  // 通常実行は timeout せず待つため null にはならない。
+  if (outcome === null) return 1;
 
   if (failures.length > 0) {
     process.stderr.write(`${failures.length} 件の適用に失敗した:\n`);

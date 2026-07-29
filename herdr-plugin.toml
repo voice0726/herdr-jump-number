@@ -39,9 +39,3 @@ id = "sync"
 title = "Sync jump numbers"
 contexts = ["global"]
 command = ["bun", "bin/renumber.ts"]
-
-[[actions]]
-id = "reset"
-title = "Remove jump numbers"
-contexts = ["global"]
-command = ["bun", "bin/renumber.ts", "--reset"]
