@@ -19,6 +19,9 @@ command = ["bun", "bin/renumber.ts"]
 on = "workspace.moved"
 command = ["bun", "bin/renumber.ts"]
 [[events]]
+on = "workspace.reordered"
+command = ["bun", "bin/renumber.ts"]
+[[events]]
 on = "workspace.closed"
 command = ["bun", "bin/renumber.ts"]
 [[events]]

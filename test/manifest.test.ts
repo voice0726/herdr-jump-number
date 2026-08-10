@@ -23,6 +23,8 @@ describe("herdr-plugin.toml", () => {
     // 取りこぼすと番号がズレたまま更新されない。宣言自体を固定する。
     expect(subscribed.has("workspace.created")).toBe(true);
     expect(subscribed.has("workspace.moved")).toBe(true);
+    // UI からの並び替えは moved ではなく reordered が発火する。
+    expect(subscribed.has("workspace.reordered")).toBe(true);
     expect(subscribed.has("workspace.closed")).toBe(true);
   });
 
