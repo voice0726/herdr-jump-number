@@ -59,6 +59,8 @@ function syncWorkspaces(
     failures,
     workspaces.map((workspace) => () => {
       const value = desiredWorkspaceToken(cfg, workspace.number);
+      // pane イベントでも同期するため、実行回数は多い。差分が無い workspace は触らない。
+      if (value === (workspace.tokens?.[TOKEN_NAME] ?? null)) return;
       if (value === null) clearWorkspaceToken(workspace.workspace_id, TOKEN_NAME);
       else setWorkspaceToken(workspace.workspace_id, TOKEN_NAME, value);
     }),
@@ -66,11 +68,19 @@ function syncWorkspaces(
 }
 
 function syncTabs(cfg: Config, tabs: TabInfo[], failures: string[]): void {
+  // tab.number は workspace ごとの通し番号で、tab を閉じても詰められない
+  // (herdr 0.8.2 実測: 1,2,3,4 の 2 番目を閉じると 1,3,4 のまま)。
+  // herdr が既定ラベルに出す番号は list 順の位置なので、こちらを使う。
+  const positions = new Map<string, number>();
   applyAll(
     failures,
-    tabs.map((tab) => () => {
-      const label = desiredTabLabel(cfg, tab.label, tab.number);
-      if (label !== null) renameTab(tab.tab_id, label);
+    tabs.map((tab) => {
+      const position = (positions.get(tab.workspace_id) ?? 0) + 1;
+      positions.set(tab.workspace_id, position);
+      return () => {
+        const label = desiredTabLabel(cfg, tab.label, position);
+        if (label !== null) renameTab(tab.tab_id, label);
+      };
     }),
   );
 }

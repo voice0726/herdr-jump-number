@@ -17,7 +17,7 @@ workspaces and tabs without breaking Herdr's automatic workspace labels.
 
 ## Requirements
 
-- Herdr `0.7.5` or later
+- Herdr `0.8.2` or later
 - Bun `1.3` or later available as `bun` on `PATH`
 
 The plugin runs the TypeScript source directly and has no runtime npm
@@ -269,7 +269,7 @@ make check
 
 ### 必要なもの
 
-- Herdr `0.7.5` 以上
+- Herdr `0.8.2` 以上
 - `PATH` から `bun` として実行できる Bun `1.3` 以上
 
 この plugin は TypeScript のソースを直接実行し、実行時の npm 依存はありません。通常のインストールでは `bun install` は不要です。

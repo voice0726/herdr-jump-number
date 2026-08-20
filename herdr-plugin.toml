@@ -2,7 +2,7 @@ id = "voice0726.jump-number"
 name = "Jump Number"
 version = "0.1.0"
 description = "Show jump-key numbers on workspaces and tabs without breaking herdr's automatic labels."
-min_herdr_version = "0.7.5"
+min_herdr_version = "0.8.2"
 platforms = ["linux", "macos"]
 
 # ビルド工程は持たない([[build]] を書かない)。bun がソースを直接実行する。
@@ -35,6 +35,21 @@ on = "tab.closed"
 command = ["bun", "bin/renumber.ts"]
 [[events]]
 on = "tab.renamed"
+command = ["bun", "bin/renumber.ts"]
+
+# worktree remove は workspace.closed を発火しない。worktree.removed だけが出る。
+[[events]]
+on = "worktree.removed"
+command = ["bun", "bin/renumber.ts"]
+# pane が抜けて workspace / tab が消えるとき、herdr 0.8.2 は
+# workspace.closed / tab.closed を発火しないことがある:
+#   - shell の exit で最後の pane が終了 -> pane.exited だけ
+#   - tab 最後の pane を close -> pane.closed だけ
+[[events]]
+on = "pane.exited"
+command = ["bun", "bin/renumber.ts"]
+[[events]]
+on = "pane.closed"
 command = ["bun", "bin/renumber.ts"]
 
 [[actions]]

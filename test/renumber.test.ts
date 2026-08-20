@@ -63,7 +63,8 @@ function runPlugin(options: {
 
 const WS = [
   { workspace_id: "w1", number: 1, label: "~" },
-  { workspace_id: "w2", number: 10, label: "proj" },
+  // 番号がズレた後の状態。tokens は herdr が返す「現在値」を表す。
+  { workspace_id: "w2", number: 10, label: "proj", tokens: { jumpnum: "[2]" } },
 ];
 const TABS = [
   { tab_id: "w1:t1", workspace_id: "w1", number: 1, label: "1" },
@@ -94,6 +95,23 @@ describe("bin/renumber.ts", () => {
     expect(clear?.[clear.indexOf("--clear-token") + 1]).toBe("jumpnum");
   });
 
+  test("トークンが既に一致する workspace には report-metadata を発行しない", () => {
+    // pane イベントでも起動するため、変化が無いときは herdr を一切叩かない。
+    const { calls } = runPlugin({
+      workspaces: [{ workspace_id: "w1", number: 1, label: "~", tokens: { jumpnum: "[1]" } }],
+      tabs: [],
+    });
+    expect(calls.filter((call) => call[1] === "report-metadata")).toEqual([]);
+  });
+
+  test("max_number 超過でもトークンが無ければ --clear-token を発行しない", () => {
+    const { calls } = runPlugin({
+      workspaces: [{ workspace_id: "w2", number: 10, label: "proj" }],
+      tabs: [],
+    });
+    expect(calls.filter((call) => call.includes("--clear-token"))).toEqual([]);
+  });
+
   test("既定ラベルの tab には rename を発行しない", () => {
     const { calls } = runPlugin({ workspaces: WS, tabs: TABS });
     const renamed = calls
@@ -108,6 +126,31 @@ describe("bin/renumber.ts", () => {
     const renamed = calls.filter((call) => call[0] === "tab" && call[1] === "rename");
     expect(renamed).toContainEqual(["tab", "rename", "w1:t2", "2:review"]);
     expect(renamed).toContainEqual(["tab", "rename", "w2:t1", "1:notes"]);
+  });
+
+  test("tab の prefix は number ではなく workspace 内の位置を使う", () => {
+    // herdr 0.8.2 実測: tab.number は tab を閉じても詰められない通し番号で、
+    // 既定ラベルに出る番号(= list 順の位置)とズレる。
+    const gapTabs = [
+      { tab_id: "w1:t1", workspace_id: "w1", number: 1, label: "1" },
+      { tab_id: "w1:t3", workspace_id: "w1", number: 3, label: "3:review" },
+      { tab_id: "w1:t4", workspace_id: "w1", number: 4, label: "4:notes" },
+    ];
+    const { calls } = runPlugin({ workspaces: WS, tabs: gapTabs });
+    const renamed = calls.filter((call) => call[0] === "tab" && call[1] === "rename");
+    expect(renamed).toContainEqual(["tab", "rename", "w1:t3", "2:review"]);
+    expect(renamed).toContainEqual(["tab", "rename", "w1:t4", "3:notes"]);
+  });
+
+  test("位置の採番は workspace ごとに独立している", () => {
+    const crossTabs = [
+      { tab_id: "w1:t5", workspace_id: "w1", number: 5, label: "alpha" },
+      { tab_id: "w2:t7", workspace_id: "w2", number: 7, label: "beta" },
+    ];
+    const { calls } = runPlugin({ workspaces: WS, tabs: crossTabs });
+    const renamed = calls.filter((call) => call[0] === "tab" && call[1] === "rename");
+    expect(renamed).toContainEqual(["tab", "rename", "w1:t5", "1:alpha"]);
+    expect(renamed).toContainEqual(["tab", "rename", "w2:t7", "1:beta"]);
   });
 
   test("tabs = false のとき tab rename を一切発行しない", () => {

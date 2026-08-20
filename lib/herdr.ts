@@ -4,6 +4,8 @@ export type WorkspaceInfo = {
   workspace_id: string;
   number: number;
   label: string;
+  /** herdr が返す現在の metadata token。未設定の workspace では欠落する。 */
+  tokens?: Record<string, string>;
 };
 
 export type TabInfo = {

@@ -35,6 +35,15 @@ describe("herdr-plugin.toml", () => {
     expect(subscribed.has("tab.renamed")).toBe(true);
   });
 
+  test("workspace / tab イベントを伴わない消滅も購読する", () => {
+    // herdr 0.8.2 実測: worktree remove は worktree.removed だけ、
+    // shell の exit は pane.exited だけ、tab 最後の pane の close は pane.closed だけを発火する。
+    // これらを落とすと workspace / tab が消えても番号が振り直されない。
+    expect(subscribed.has("worktree.removed")).toBe(true);
+    expect(subscribed.has("pane.exited")).toBe(true);
+    expect(subscribed.has("pane.closed")).toBe(true);
+  });
+
   test("workspace.metadata_updated を購読しない", () => {
     // 自分の report-metadata がこのイベントを発火するため、購読すると無限ループになる。
     expect(subscribed.has("workspace.metadata_updated")).toBe(false);
@@ -47,6 +56,6 @@ describe("herdr-plugin.toml", () => {
 
   test("platforms と min_herdr_version が固定されている", () => {
     expect(manifest.platforms).toEqual(["linux", "macos"]);
-    expect(manifest.min_herdr_version).toBe("0.7.5");
+    expect(manifest.min_herdr_version).toBe("0.8.2");
   });
 });
