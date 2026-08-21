@@ -167,6 +167,14 @@ uses a display-only workspace metadata token named `jumpnum` and never calls
 Tabs do not have the same metadata display mechanism, so the plugin prefixes
 user-named tabs. Numeric default labels are not changed.
 
+Numbers follow the sidebar display order, not Herdr's internal workspace
+order. Worktree workspaces are grouped under their repository checkout in the
+sidebar, and Herdr's jump keys resolve against that same grouped order.
+
+Sidebar worktree groups can be collapsed. Herdr exposes neither the collapse
+state nor a collapse event, so the plugin always numbers as if every group is
+expanded; while a group is collapsed the numbers can be off.
+
 ## Reset, uninstall, or change the format
 
 Resolve the plugin config directory before disabling it, then always disable
@@ -406,6 +414,14 @@ Herdr の workspace label は、`workspace rename` を呼ぶと固定され、�
 
 tab には同じ metadata 表示機構がないため、ユーザーが名前を付けた tab に prefix を付けます。
 数字だけの既定ラベルは変更しません。
+
+番号は Herdr 内部の workspace 順ではなく、サイドバーの表示順に従います。worktree の
+workspace はサイドバー上で repository の checkout ごとにグループ化され、Herdr の
+ジャンプキーも同じグループ順で解決されます。
+
+サイドバーの worktree グループは折りたためますが、折りたたみ状態は Herdr の API にも
+イベントにも露出しません。そのため常に全グループが展開されている前提で採番します。
+グループを折りたたんでいる間は番号がズレることがあります。
 
 ### reset・アンインストール・書式変更
 

@@ -6,6 +6,11 @@ export type WorkspaceInfo = {
   label: string;
   /** herdr が返す現在の metadata token。未設定の workspace では欠落する。 */
   tokens?: Record<string, string>;
+  /** worktree 由来の workspace だけが持つ。sidebar のグループ化に使う。 */
+  worktree?: {
+    repo_key: string;
+    is_linked_worktree: boolean;
+  };
 };
 
 export type TabInfo = {

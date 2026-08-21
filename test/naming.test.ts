@@ -1,8 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { DEFAULTS, type Config } from "../lib/config";
+import type { WorkspaceInfo } from "../lib/herdr";
 import {
   desiredTabLabel,
   desiredWorkspaceToken,
+  displayOrder,
   escapeRegExp,
   tabBase,
   tabPrefixPattern,
@@ -114,5 +116,88 @@ describe("tabPrefixPattern / tabBase / escapeRegExp", () => {
   test("escapeRegExp が正規表現メタ文字を無害化する", () => {
     expect(new RegExp(escapeRegExp("a.b")).test("axb")).toBe(false);
     expect(new RegExp(escapeRegExp("a.b")).test("a.b")).toBe(true);
+  });
+});
+
+/** 素の workspace(worktree なし)。 */
+function plain(id: string): WorkspaceInfo {
+  return { workspace_id: id, number: 0, label: id };
+}
+
+/** worktree workspace。linked = true で linked worktree、false で repo 本体。 */
+function worktree(id: string, repoKey: string, linked: boolean): WorkspaceInfo {
+  return {
+    workspace_id: id,
+    number: 0,
+    label: id,
+    worktree: { repo_key: repoKey, is_linked_worktree: linked },
+  };
+}
+
+function ids(workspaces: WorkspaceInfo[]): string[] {
+  return workspaces.map((workspace) => workspace.workspace_id);
+}
+
+describe("displayOrder", () => {
+  test("worktree が無ければ flat 順のまま", () => {
+    const list = [plain("a"), plain("b"), plain("c")];
+    expect(ids(displayOrder(list))).toEqual(["a", "b", "c"]);
+  });
+
+  test("親が flat 順で先頭でなくてもグループの先頭に来る", () => {
+    const list = [worktree("wt", "/r/.git", true), worktree("repo", "/r/.git", false)];
+    expect(ids(displayOrder(list))).toEqual(["repo", "wt"]);
+  });
+
+  test("離れたメンバーはグループ位置に引き寄せられ、後続がずれる", () => {
+    // 実測した再現ケース: 末尾に worktree を足すと、間の workspace が後ろへずれる。
+    const list = [
+      plain("ws1"),
+      worktree("repo", "/r/.git", false),
+      worktree("wt-a", "/r/.git", true),
+      plain("ws2"),
+      worktree("wt-b", "/r/.git", true),
+    ];
+    expect(ids(displayOrder(list))).toEqual(["ws1", "repo", "wt-a", "wt-b", "ws2"]);
+  });
+
+  test("親が居なければグループ化しない(linked worktree のみ)", () => {
+    const list = [
+      worktree("wt-a", "/r/.git", true),
+      plain("ws1"),
+      worktree("wt-b", "/r/.git", true),
+    ];
+    expect(ids(displayOrder(list))).toEqual(["wt-a", "ws1", "wt-b"]);
+  });
+
+  test("メンバーが 1 個ならグループ化しない", () => {
+    const list = [worktree("repo", "/r/.git", false), plain("ws1")];
+    expect(ids(displayOrder(list))).toEqual(["repo", "ws1"]);
+  });
+
+  test("複数のグループがそれぞれ独立して畳まれる", () => {
+    const list = [
+      worktree("x-wt", "/x/.git", true),
+      worktree("y-repo", "/y/.git", false),
+      worktree("x-repo", "/x/.git", false),
+      plain("ws1"),
+      worktree("y-wt", "/y/.git", true),
+    ];
+    expect(ids(displayOrder(list))).toEqual([
+      "x-repo",
+      "x-wt",
+      "y-repo",
+      "y-wt",
+      "ws1",
+    ]);
+  });
+
+  test("グループ内の linked メンバーは flat 順を保つ", () => {
+    const list = [
+      worktree("wt-a", "/r/.git", true),
+      worktree("wt-b", "/r/.git", true),
+      worktree("repo", "/r/.git", false),
+    ];
+    expect(ids(displayOrder(list))).toEqual(["repo", "wt-a", "wt-b"]);
   });
 });

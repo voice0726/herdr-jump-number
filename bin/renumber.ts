@@ -10,7 +10,12 @@ import {
   type WorkspaceInfo,
 } from "../lib/herdr";
 import { withLock } from "../lib/lock";
-import { desiredTabLabel, desiredWorkspaceToken, tabBase } from "../lib/naming";
+import {
+  desiredTabLabel,
+  desiredWorkspaceToken,
+  displayOrder,
+  tabBase,
+} from "../lib/naming";
 
 const TOKEN_NAME = "jumpnum";
 
@@ -55,10 +60,12 @@ function syncWorkspaces(
   workspaces: WorkspaceInfo[],
   failures: string[],
 ): void {
+  // workspace.number は内部 Vec の flat 順。jump key は sidebar の表示順で
+  // 解決するため、worktree のグループ化があるとズレる。表示順の位置を使う。
   applyAll(
     failures,
-    workspaces.map((workspace) => () => {
-      const value = desiredWorkspaceToken(cfg, workspace.number);
+    displayOrder(workspaces).map((workspace, index) => () => {
+      const value = desiredWorkspaceToken(cfg, index + 1);
       // pane イベントでも同期するため、実行回数は多い。差分が無い workspace は触らない。
       if (value === (workspace.tokens?.[TOKEN_NAME] ?? null)) return;
       if (value === null) clearWorkspaceToken(workspace.workspace_id, TOKEN_NAME);

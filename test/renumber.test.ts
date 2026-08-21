@@ -61,10 +61,11 @@ function runPlugin(options: {
   return { exitCode: proc.exitCode, calls, stderr: proc.stderr.toString() };
 }
 
+// number は使わない(採番は sidebar の表示順の位置)。実応答に合わせて残す。
 const WS = [
   { workspace_id: "w1", number: 1, label: "~" },
   // 番号がズレた後の状態。tokens は herdr が返す「現在値」を表す。
-  { workspace_id: "w2", number: 10, label: "proj", tokens: { jumpnum: "[2]" } },
+  { workspace_id: "w2", number: 10, label: "proj", tokens: { jumpnum: "[10]" } },
 ];
 const TABS = [
   { tab_id: "w1:t1", workspace_id: "w1", number: 1, label: "1" },
@@ -88,7 +89,7 @@ describe("bin/renumber.ts", () => {
   });
 
   test("max_number 超過の workspace には --clear-token を発行する", () => {
-    const { calls } = runPlugin({ workspaces: WS, tabs: TABS });
+    const { calls } = runPlugin({ workspaces: WS, tabs: TABS, configToml: "max_number = 1\n" });
     const clear = calls.find((call) => call.includes("--clear-token"));
     expect(clear).toBeDefined();
     expect(clear?.[2]).toBe("w2");
@@ -106,10 +107,54 @@ describe("bin/renumber.ts", () => {
 
   test("max_number 超過でもトークンが無ければ --clear-token を発行しない", () => {
     const { calls } = runPlugin({
-      workspaces: [{ workspace_id: "w2", number: 10, label: "proj" }],
+      workspaces: [
+        { workspace_id: "w1", number: 1, label: "~" },
+        { workspace_id: "w2", number: 2, label: "proj" },
+      ],
       tabs: [],
+      configToml: "max_number = 1\n",
     });
     expect(calls.filter((call) => call.includes("--clear-token"))).toEqual([]);
+  });
+
+  test("workspace の採番は flat な number ではなく sidebar の表示順を使う", () => {
+    // 実測した再現ケース: 末尾に追加した worktree がグループへ割り込み、
+    // 間の workspace が後ろへずれる。number をそのまま使うと番号が実際の
+    // ジャンプ先とズレる。
+    const repoKey = "/repo/.git";
+    const grouped = [
+      { workspace_id: "ws1", number: 1, label: "~" },
+      {
+        workspace_id: "repo",
+        number: 2,
+        label: "proj",
+        worktree: { repo_key: repoKey, is_linked_worktree: false },
+      },
+      {
+        workspace_id: "wtA",
+        number: 3,
+        label: "proj-a",
+        worktree: { repo_key: repoKey, is_linked_worktree: true },
+      },
+      { workspace_id: "ws2", number: 4, label: "notes" },
+      {
+        workspace_id: "wtB",
+        number: 5,
+        label: "proj-b",
+        worktree: { repo_key: repoKey, is_linked_worktree: true },
+      },
+    ];
+    const { calls } = runPlugin({ workspaces: grouped, tabs: [] });
+    const tokens = calls
+      .filter((call) => call.includes("--token"))
+      .map((call) => [call[2], call[call.indexOf("--token") + 1]]);
+    expect(tokens).toEqual([
+      ["ws1", "jumpnum=[1]"],
+      ["repo", "jumpnum=[2]"],
+      ["wtA", "jumpnum=[3]"],
+      ["wtB", "jumpnum=[4]"],
+      ["ws2", "jumpnum=[5]"],
+    ]);
   });
 
   test("既定ラベルの tab には rename を発行しない", () => {

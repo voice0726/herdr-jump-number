@@ -1,4 +1,5 @@
 import { PLACEHOLDER, type Config } from "./config";
+import type { WorkspaceInfo } from "./herdr";
 
 /** 正規表現メタ文字を無害化する。書式のリテラル部分をパターンに埋め込むために使う。 */
 export function escapeRegExp(value: string): string {
@@ -61,4 +62,53 @@ export function desiredWorkspaceToken(
 ): string | null {
   if (number > cfg.maxNumber) return null;
   return cfg.workspaceToken.replace(PLACEHOLDER, String(number));
+}
+
+/** repo 本体 checkout(グループの親)かどうか。 */
+function isRepoCheckout(workspace: WorkspaceInfo): boolean {
+  return workspace.worktree?.is_linked_worktree === false;
+}
+
+/**
+ * herdr sidebar の表示順を再現する。jump key はこの順の位置で workspace を
+ * 解決するため、worktree のグループ化で flat 順とズレる。
+ * 折りたたみ状態は API に露出しないため、全グループ展開を前提とする。
+ */
+export function displayOrder(workspaces: WorkspaceInfo[]): WorkspaceInfo[] {
+  const membersByKey = new Map<string, WorkspaceInfo[]>();
+  for (const workspace of workspaces) {
+    const key = workspace.worktree?.repo_key;
+    if (key === undefined) continue;
+    const members = membersByKey.get(key);
+    if (members) members.push(workspace);
+    else membersByKey.set(key, [workspace]);
+  }
+
+  // グループ化されるのは、メンバーが 2 個以上かつ親を含むキーだけ。
+  const groupedKeys = new Set<string>();
+  for (const [key, members] of membersByKey) {
+    if (members.length >= 2 && members.some(isRepoCheckout)) groupedKeys.add(key);
+  }
+
+  const emitted = new Set<string>();
+  const ordered: WorkspaceInfo[] = [];
+  for (const workspace of workspaces) {
+    const key = workspace.worktree?.repo_key;
+    if (key === undefined || !groupedKeys.has(key)) {
+      ordered.push(workspace);
+      continue;
+    }
+    if (emitted.has(key)) continue;
+    emitted.add(key);
+
+    const members = membersByKey.get(key);
+    const parent = members?.find(isRepoCheckout);
+    if (!members || !parent) {
+      ordered.push(workspace);
+      continue;
+    }
+    // 親を先頭に、残りのメンバーを flat 順で続ける。
+    ordered.push(parent, ...members.filter((member) => member !== parent));
+  }
+  return ordered;
 }
