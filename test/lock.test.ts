@@ -71,6 +71,24 @@ describe("withLock", () => {
     unlinkSync(path);
   });
 
+  test("旧形式の PID lock は mtime が古くても owner process が稼働中なら壊さない", () => {
+    const path = freshLockPath();
+    writeFileSync(path, JSON.stringify(process.pid));
+    const old = new Date(Date.now() - 120_000);
+    utimesSync(path, old, old);
+
+    expect(withLock(() => "unexpected", { path, waitMs: 100, staleMs: 10 })).toBeNull();
+    expect(existsSync(path)).toBe(true);
+    unlinkSync(path);
+  });
+
+  test("旧形式の死亡 PID lock は回収して実行する", () => {
+    const path = freshLockPath();
+    writeFileSync(path, JSON.stringify(99_999_999));
+
+    expect(withLock(() => "ok", { path, waitMs: 100, staleMs: 60_000 })).toBe("ok");
+  });
+
   test("先行 owner の finally は後続 owner の lock を削除しない", () => {
     const path = freshLockPath();
     withLock(

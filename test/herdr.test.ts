@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { run } from "../lib/herdr";
+import { listTabs, listWorkspaces, run } from "../lib/herdr";
 
 function withEmptyHerdr<T>(callback: () => T): T {
   const previous = process.env.HERDR_BIN_PATH;
@@ -28,5 +28,15 @@ describe("lib/herdr.ts", () => {
     );
 
     expect(result).toEqual({});
+  });
+
+  test("workspace list が空 stdout ならエラーにする", () => {
+    expect(() => withEmptyHerdr(() => listWorkspaces())).toThrow(
+      "workspaces 配列が無い",
+    );
+  });
+
+  test("tab list が空 stdout ならエラーにする", () => {
+    expect(() => withEmptyHerdr(() => listTabs())).toThrow("tabs 配列が無い");
   });
 });

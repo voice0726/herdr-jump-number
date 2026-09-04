@@ -63,14 +63,21 @@ function snapshot(path: string): LockSnapshot | null {
     const raw = readFileSync(path, "utf8");
     let owner: LockOwner | null = null;
     try {
-      const parsed = JSON.parse(raw) as Partial<LockOwner>;
-      if (
-        Number.isInteger(parsed.pid) &&
-        (parsed.pid as number) > 0 &&
-        typeof parsed.token === "string" &&
-        parsed.token.length > 0
-      ) {
-        owner = { pid: parsed.pid as number, token: parsed.token };
+      const parsed = JSON.parse(raw) as unknown;
+      if (typeof parsed === "number") {
+        if (Number.isInteger(parsed) && parsed > 0) {
+          owner = { pid: parsed, token: "" };
+        }
+      } else if (parsed !== null && typeof parsed === "object") {
+        const candidate = parsed as Partial<LockOwner>;
+        if (
+          Number.isInteger(candidate.pid) &&
+          (candidate.pid as number) > 0 &&
+          typeof candidate.token === "string" &&
+          candidate.token.length > 0
+        ) {
+          owner = { pid: candidate.pid as number, token: candidate.token };
+        }
       }
     } catch {
       // v0.1.0 の PID だけの lock も安全に回収できるよう読み取る。

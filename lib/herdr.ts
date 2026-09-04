@@ -65,13 +65,19 @@ export function run(args: string[]): Record<string, unknown> {
 
 export function listWorkspaces(): WorkspaceInfo[] {
   const result = run(["workspace", "list"]);
-  return (result.workspaces ?? []) as WorkspaceInfo[];
+  if (!Array.isArray(result.workspaces)) {
+    throw new HerdrError("herdr workspace list の応答に workspaces 配列が無い");
+  }
+  return result.workspaces as WorkspaceInfo[];
 }
 
 /** herdr tab list は全 workspace の tab を返す。 */
 export function listTabs(): TabInfo[] {
   const result = run(["tab", "list"]);
-  return (result.tabs ?? []) as TabInfo[];
+  if (!Array.isArray(result.tabs)) {
+    throw new HerdrError("herdr tab list の応答に tabs 配列が無い");
+  }
+  return result.tabs as TabInfo[];
 }
 
 export function setWorkspaceToken(id: string, name: string, value: string): void {
