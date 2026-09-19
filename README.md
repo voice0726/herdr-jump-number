@@ -18,10 +18,15 @@ workspaces and tabs without breaking Herdr's automatic workspace labels.
 ## Requirements
 
 - Herdr `0.8.2` or later
-- Bun `1.3` or later available as `bun` on `PATH`
+- Bun `1.3` or later (on `PATH`, in the standard Bun install directory, or via mise shims)
 
 The plugin runs the TypeScript source directly and has no runtime npm
 dependencies. You do not need to run `bun install` for a normal installation.
+
+If Herdr's server cannot find `bun` on `PATH`, the launcher also checks
+`${BUN_INSTALL:-$HOME/.bun}/bin/bun` and mise's `shims/bun` under
+`MISE_DATA_DIR` (default: `${XDG_DATA_HOME:-$HOME/.local/share}/mise`).
+These variables must be available to the Herdr server. No interactive shell is started.
 
 ## Quick start
 
@@ -278,9 +283,17 @@ make check
 ### 必要なもの
 
 - Herdr `0.8.2` 以上
-- `PATH` から `bun` として実行できる Bun `1.3` 以上
+- Bun `1.3` 以上（`PATH`、Bun の標準配置、または mise の shim から実行可能）
 
 この plugin は TypeScript のソースを直接実行し、実行時の npm 依存はありません。通常のインストールでは `bun install` は不要です。
+
+Herdr のサーバーの `PATH` に `bun` がない場合は、次の場所も確認します。
+
+- `${BUN_INSTALL:-$HOME/.bun}/bin/bun`
+- `${MISE_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/mise}/shims/bun`
+
+環境変数を指定する場合は、Herdr のサーバーに渡してください。
+起動時に対話シェルは実行しません。
 
 ### クイックスタート
 
