@@ -8,52 +8,52 @@ platforms = ["linux", "macos"]
 # ビルド工程は持たない([[build]] を書かない)。bun がソースを直接実行する。
 
 [[startup]]
-command = ["bun", "bin/renumber.ts"]
+command = ["/bin/sh", "bin/launch.sh"]
 
 # workspace.metadata_updated は意図的に購読しない。
 # 自分の report-metadata がこのイベントを発火するため、購読すると無限ループになる。
 [[events]]
 on = "workspace.created"
-command = ["bun", "bin/renumber.ts"]
+command = ["/bin/sh", "bin/launch.sh"]
 [[events]]
 on = "workspace.moved"
-command = ["bun", "bin/renumber.ts"]
+command = ["/bin/sh", "bin/launch.sh"]
 [[events]]
 on = "workspace.reordered"
-command = ["bun", "bin/renumber.ts"]
+command = ["/bin/sh", "bin/launch.sh"]
 [[events]]
 on = "workspace.closed"
-command = ["bun", "bin/renumber.ts"]
+command = ["/bin/sh", "bin/launch.sh"]
 [[events]]
 on = "tab.created"
-command = ["bun", "bin/renumber.ts"]
+command = ["/bin/sh", "bin/launch.sh"]
 [[events]]
 on = "tab.moved"
-command = ["bun", "bin/renumber.ts"]
+command = ["/bin/sh", "bin/launch.sh"]
 [[events]]
 on = "tab.closed"
-command = ["bun", "bin/renumber.ts"]
+command = ["/bin/sh", "bin/launch.sh"]
 [[events]]
 on = "tab.renamed"
-command = ["bun", "bin/renumber.ts"]
+command = ["/bin/sh", "bin/launch.sh"]
 
 # worktree remove は workspace.closed を発火しない。worktree.removed だけが出る。
 [[events]]
 on = "worktree.removed"
-command = ["bun", "bin/renumber.ts"]
+command = ["/bin/sh", "bin/launch.sh"]
 # pane が抜けて workspace / tab が消えるとき、herdr 0.8.2 は
 # workspace.closed / tab.closed を発火しないことがある:
 #   - shell の exit で最後の pane が終了 -> pane.exited だけ
 #   - tab 最後の pane を close -> pane.closed だけ
 [[events]]
 on = "pane.exited"
-command = ["bun", "bin/renumber.ts"]
+command = ["/bin/sh", "bin/launch.sh"]
 [[events]]
 on = "pane.closed"
-command = ["bun", "bin/renumber.ts"]
+command = ["/bin/sh", "bin/launch.sh"]
 
 [[actions]]
 id = "sync"
 title = "Sync jump numbers"
 contexts = ["global"]
-command = ["bun", "bin/renumber.ts"]
+command = ["/bin/sh", "bin/launch.sh"]

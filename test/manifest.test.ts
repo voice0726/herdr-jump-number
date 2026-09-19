@@ -8,6 +8,7 @@ const manifest = Bun.TOML.parse(
   id: string;
   platforms: string[];
   min_herdr_version: string;
+  startup: { command: string[] }[];
   events: { on: string; command: string[] }[];
   actions: { id: string; command: string[] }[];
 };
@@ -15,6 +16,13 @@ const manifest = Bun.TOML.parse(
 const subscribed = new Set(manifest.events.map((event) => event.on));
 
 describe("herdr-plugin.toml", () => {
+  test("すべての起動経路で Bun の探索処理を使う", () => {
+    const commands = [...manifest.startup, ...manifest.events, ...manifest.actions];
+    for (const entry of commands) {
+      expect(entry.command).toEqual(["/bin/sh", "bin/launch.sh"]);
+    }
+  });
+
   test("plugin id は --source の値と一致する", () => {
     expect(manifest.id).toBe("voice0726.jump-number");
   });
